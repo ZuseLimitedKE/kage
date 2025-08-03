@@ -5,6 +5,7 @@ export class OrderModel {
     try {
       await ORDER_COLLECTION.insertOne(order);
     } catch (error) {
+      console.error(`db error:${error}`);
       throw new MyError("error:" + Errors.NOT_CREATE_ORDER);
     }
   }
