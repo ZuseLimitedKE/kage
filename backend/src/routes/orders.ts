@@ -2,24 +2,14 @@ import { Router } from "express";
 import orderController from "../controllers/orders";
 import { Errors } from "../constants/errors";
 import { OrdersSchema } from "../schema/orders";
-import { $ZodIssue } from "zod/v4/core";
+import { validateBody } from "../middleware/validate";
 
 const router: Router = Router();
 
-router.post("/", async (req, res) => {
+router.post("/", validateBody(OrdersSchema), async (req, res) => {
   try {
-    const requestBody = req.body;
-    const parsed = OrdersSchema.safeParse(requestBody);
-    if (parsed.success) {
-      const order = parsed.data;
-      await orderController.createOrder(order);
-      res.status(201).json({ msg: "successfully created the order" });
-    } else {
-      const errors = parsed.error.issues.map(
-        (issue: $ZodIssue) => issue.message,
-      );
-      res.status(400).json({ error: errors });
-    }
+    await orderController.createOrder(req.body);
+    res.status(201).json({ msg: "successfully created the order" });
   } catch (error) {
     console.error("Error creating order", error);
     res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });
