@@ -1,6 +1,6 @@
 import z from "zod";
 
-const ordersSchema = z.object({
+export const OrdersSchema = z.object({
   order_type: z.enum(["buy", "sell"], { error: "invalid order type selected" }),
   amount: z
     .number({ error: "amount must be a valid number" })
@@ -10,4 +10,4 @@ const ordersSchema = z.object({
     .nonnegative({ error: "rate must be positive" }),
 });
 
-export type CreateOrder = z.infer<typeof ordersSchema>;
+export type CreateOrder = z.infer<typeof OrdersSchema>;
