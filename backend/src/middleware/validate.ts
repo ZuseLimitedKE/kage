@@ -8,8 +8,8 @@ export function validateBody(schema: z.ZodObject<any, any>) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessages = error.errors.map((issue) => ({
-          path: issue.path.join("."),
+        const errorMessages = error.issues.map((issue) => ({
+          field: issue.path.join("."),
           message: issue.message,
         }));
 
@@ -33,8 +33,8 @@ export function validateParams(schema: z.ZodObject<any, any>) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessages = error.errors.map((issue) => ({
-          path: issue.path.join("."),
+        const errorMessages = error.issues.map((issue) => ({
+          field: issue.path.join("."),
           message: issue.message,
         }));
 
@@ -58,8 +58,8 @@ export function validateQuery(schema: z.ZodObject<any, any>) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessages = error.errors.map((issue) => ({
-          path: issue.path.join("."),
+        const errorMessages = error.issues.map((issue) => ({
+          field: issue.path.join("."),
           message: issue.message,
         }));
 
