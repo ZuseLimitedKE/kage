@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "pnpm nodemon",
+    "build": "rm -rf dist && tsup",
+    "start": "node dist/index.mjs"
   },
   "keywords": [],
   "author": "",
