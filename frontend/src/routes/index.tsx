@@ -1,3 +1,6 @@
+import * as buffer from "buffer";
+window.Buffer = buffer.Buffer;
+
 import { createFileRoute } from '@tanstack/react-router'
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import {
@@ -54,14 +57,15 @@ function App() {
   const {isConnected, address} = useAccount();
   const publicClient = usePublicClient({ chainId: avalancheFuji.id });
   const {data: walletClient} = useWalletClient();
-  const {useEncryptedBalance} = useEERC(
+  const {useEncryptedBalance, isInitialized} = useEERC(
     publicClient as CompatiblePublicClient,
     walletClient as CompatibleWalletClient,
     testTokenContractAddress,
     CIRCUIT_CONFIG
   );
   const {
-    deposit
+    deposit,
+    refetchBalance
   } = useEncryptedBalance(testTokenContractAddress);
 
   const { data: erc20Decimals } = useReadContract({
@@ -84,11 +88,17 @@ function App() {
         return;
       }
 
+      if (!isInitialized) {
+        toast.error("Could not initialize eERC20");
+        return;
+      }
+
       const parsedAmount = parseUnits(amount, erc20Decimals);
 
       const { transactionHash } = await deposit(parsedAmount);
       toast.success("Successfull deposit");
       console.log(transactionHash);
+      refetchBalance();
     } catch (error) {
       console.error(error);
       toast.error("Deposit failed");
@@ -96,17 +106,17 @@ function App() {
   };
 
   return (
-    <main>
+    <main className="p-2">
       <header>
         <ConnectButton />
       </header>
       <p>Transfer eERC20 to Anthony's account</p>
 
-      <Button onClick={() => handlePrivateDeposit('1000000')}>
+      <Button onClick={async () => await handlePrivateDeposit('1')}>
         Deposit some tokens into eERC20
       </Button>
 
-      <Button className='mr-10'>
+      <Button className='ml-10'>
         Transfer funds
       </Button>
     </main>
