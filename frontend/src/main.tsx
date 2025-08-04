@@ -7,6 +7,11 @@ import { routeTree } from './routeTree.gen'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { WagmiProvider } from 'wagmi'
+import config from '../web3-config.ts'
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { Toaster } from 'sonner'
 
 // Create a new router instance
 const router = createRouter({
@@ -25,13 +30,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const queryClient = new QueryClient();
+
 // Render the app
 const rootElement = document.getElementById('app')
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider>
+            <RouterProvider router={router} />
+            <Toaster />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
     </StrictMode>,
   )
 }
