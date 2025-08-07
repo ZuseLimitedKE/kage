@@ -23,6 +23,7 @@ import { avalancheFuji } from 'viem/chains';
 import erc20ABI from "@/erc20ABI.json";
 import { toast } from 'sonner';
 import { parseUnits } from 'viem';
+import { useEffect } from "react";
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -47,8 +48,8 @@ const CIRCUIT_CONFIG = {
 		zkey: "/WithdrawCircuit.groth16.zkey",
 	},
   burn: {
-    wasm: "/BurnCircuit.wasm",
-		zkey: "/BurnCircuit.groth16.zkey",
+    wasm: "/burn.wasm",
+		zkey: "/burn.zkey",
   }
 } as const;
 
@@ -57,7 +58,12 @@ function App() {
   const {isConnected, address} = useAccount();
   const publicClient = usePublicClient({ chainId: avalancheFuji.id });
   const {data: walletClient} = useWalletClient();
-  const {useEncryptedBalance, isInitialized} = useEERC(
+  const {
+    useEncryptedBalance, 
+    isInitialized,
+    isRegistered,
+    register
+  } = useEERC(
     publicClient as CompatiblePublicClient,
     walletClient as CompatibleWalletClient,
     testTokenContractAddress,
@@ -78,6 +84,13 @@ function App() {
 
   
   const handlePrivateDeposit = async (amount: string) => {
+    if (!isRegistered) {
+      toast.warning("Registering you");
+      const {key, transactionHash} = await register();
+      console.log(key);
+      console.log(transactionHash);
+      toast.success("Registering done")
+    }
     if (!isConnected) {
       toast.error("Connect wallet to deposit tokens")
     }
@@ -113,7 +126,7 @@ function App() {
       <p>Transfer eERC20 to Anthony's account</p>
 
       <Button onClick={async () => await handlePrivateDeposit('1')}>
-        Deposit some tokens into eERC20
+        Deposit tokens
       </Button>
 
       <Button className='ml-10'>
