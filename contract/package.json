@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "compile": "pnpm npx hardhat compile",
+    "deployAndVerify": "pnpm npx hardhat ignition deploy ignition/modules/Kage.ts --network avalancheFuji --verify",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -25,6 +26,7 @@
     "@types/mocha": ">=9.1.0",
     "@types/node": ">=20.0.0",
     "chai": "^4.2.0",
+    "dotenv": "^17.2.1",
     "ethers": "^6.4.0",
     "hardhat": "^2.26.2",
     "hardhat-gas-reporter": "^2.3.0",
