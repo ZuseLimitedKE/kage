@@ -24,6 +24,7 @@ import erc20ABI from "@/erc20ABI.json";
 import { toast } from 'sonner';
 import { parseUnits } from 'viem';
 import { useEffect } from "react";
+import RegiserEERCButton from "@/components/EERC/register";
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -31,35 +32,35 @@ export const Route = createFileRoute('/')({
 
 // Circuit configuration
 const CIRCUIT_CONFIG = {
-	register: {
-		wasm: "/RegistrationCircuit.wasm",
-		zkey: "/RegistrationCircuit.groth16.zkey",
-	},
-	mint: {
-		wasm: "/MintCircuit.wasm",
-		zkey: "/MintCircuit.groth16.zkey",
-	},
-	transfer: {
-		wasm: "/TransferCircuit.wasm",
-		zkey: "/TransferCircuit.groth16.zkey",
-	},
-	withdraw: {
-		wasm: "/WithdrawCircuit.wasm",
-		zkey: "/WithdrawCircuit.groth16.zkey",
-	},
+  register: {
+    wasm: "/RegistrationCircuit.wasm",
+    zkey: "/RegistrationCircuit.groth16.zkey",
+  },
+  mint: {
+    wasm: "/MintCircuit.wasm",
+    zkey: "/MintCircuit.groth16.zkey",
+  },
+  transfer: {
+    wasm: "/TransferCircuit.wasm",
+    zkey: "/TransferCircuit.groth16.zkey",
+  },
+  withdraw: {
+    wasm: "/WithdrawCircuit.wasm",
+    zkey: "/WithdrawCircuit.groth16.zkey",
+  },
   burn: {
     wasm: "/burn.wasm",
-		zkey: "/burn.zkey",
+    zkey: "/burn.zkey",
   }
 } as const;
 
 function App() {
   const testTokenContractAddress = "0xce8466F83c778445429C0C71F7C91E726F943dcB"
-  const {isConnected, address} = useAccount();
+  const { isConnected, address } = useAccount();
   const publicClient = usePublicClient({ chainId: avalancheFuji.id });
-  const {data: walletClient} = useWalletClient();
+  const { data: walletClient } = useWalletClient();
   const {
-    useEncryptedBalance, 
+    useEncryptedBalance,
     isInitialized,
     isRegistered,
     register
@@ -82,11 +83,11 @@ function App() {
     address: testTokenContractAddress,
   }) as { data: number };
 
-  
+
   const handlePrivateDeposit = async (amount: string) => {
     if (!isRegistered) {
       toast.warning("Registering you");
-      const {key, transactionHash} = await register();
+      const { key, transactionHash } = await register();
       console.log(key);
       console.log(transactionHash);
       toast.success("Registering done")
@@ -125,13 +126,17 @@ function App() {
       </header>
       <p>Transfer eERC20 to Anthony's account</p>
 
-      <Button onClick={async () => await handlePrivateDeposit('1')}>
-        Deposit tokens
-      </Button>
+      <div className="flex flex-row gap-3 mt-5">
+        <RegiserEERCButton />
 
-      <Button className='ml-10'>
-        Transfer funds
-      </Button>
+        <Button onClick={async () => await handlePrivateDeposit('1')}>
+          Deposit tokens
+        </Button>
+
+        <Button>
+          Transfer funds
+        </Button>
+      </div>
     </main>
   )
 }
