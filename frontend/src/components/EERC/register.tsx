@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import type RegistrationCircuit from "@/eerc/circuits/registration";
-import { zkit } from "hardhat";
+import {groth16} from "snarkjs";
 import { useAccount, useConnectorClient, type Config } from "wagmi";
 import { JsonRpcProvider } from 'ethers'
 import { User } from "@/eerc/user";
@@ -17,11 +16,6 @@ export default function RegiserEERCButton() {
             }
 
             toast.warning("Beginning register process");
-
-            toast.warning("Getting registration circuit")
-            let registrationCircuit: RegistrationCircuit;
-            const circuit = await zkit.getCircuit("RegistrationCircuit");
-            registrationCircuit = circuit as unknown as RegistrationCircuit;
 
             toast.warning("Getting account details");
             if (!client) {
@@ -50,10 +44,15 @@ export default function RegiserEERCButton() {
                 ChainID: chainId,
                 RegistrationHash: registrationHash,
             };
-            const proof = await registrationCircuit.generateProof(input);
-            const calldata = await registrationCircuit.generateCalldata(proof);
 
-            console.log(proof, calldata);
+            const { proof, publicSignals } = await groth16.fullProve(
+                { secret: 12345 },
+                "/RegistrationCircuit.wasm",
+                "/RegistrationCircuit.groth16.zkey");
+            console.log(publicSignals);
+            console.log(proof);
+
+            console.log(proof, publicSignals);
 
             toast.success("Registered succesfully");
         } catch (err) {
