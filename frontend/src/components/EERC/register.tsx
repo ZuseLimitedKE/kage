@@ -1,8 +1,8 @@
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import {groth16} from "snarkjs";
-import { useAccount, useConnectorClient, type Config } from "wagmi";
-import { JsonRpcProvider } from 'ethers'
+import { groth16 } from "snarkjs";
+import { useAccount, useConnectorClient, type Config, type Transport } from "wagmi";
+import { FallbackProvider, JsonRpcProvider } from 'ethers'
 import { User } from "@/eerc/user";
 
 export default function RegiserEERCButton() {
@@ -15,23 +15,28 @@ export default function RegiserEERCButton() {
                 return;
             }
 
-            toast.warning("Beginning register process");
-
-            toast.warning("Getting account details");
+            toast.info("Getting account details");
             if (!client) {
                 toast.error("Could not get client");
                 return;
             }
 
             const { account, chain, transport } = client
+            toast.info("Getting user");
             const network = {
                 chainId: chain.id,
                 name: chain.name,
                 ensAddress: chain.contracts?.ensRegistry?.address,
             }
 
-            toast.warning("Getting user");
-            const provider = new JsonRpcProvider(transport.url, network);
+            let provider;
+            if (transport.type === 'fallback') {
+                provider = new FallbackProvider((transport.transports as ReturnType<Transport>[]).map(
+                        ({ value }) => new JsonRpcProvider(value?.url, network),
+                    ),)
+            }
+
+            provider = new JsonRpcProvider(transport.url, network);
             const signer = await provider.getSigner(account.address);
             const user = new User(signer);
 
