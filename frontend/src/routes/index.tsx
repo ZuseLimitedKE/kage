@@ -1,8 +1,9 @@
 import * as buffer from "buffer";
+import process from "process";
 window.Buffer = buffer.Buffer;
-
-import { createFileRoute } from '@tanstack/react-router'
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+window.process = process;
+import { createFileRoute } from "@tanstack/react-router";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
   type CompatiblePublicClient,
   type CompatibleWalletClient,
@@ -17,62 +18,57 @@ import {
   useWalletClient,
 } from "wagmi";
 
-import { Button } from '@/components/ui/button'
-import { avalancheFuji } from 'viem/chains';
+import { Button } from "@/components/ui/button";
+import { avalancheFuji } from "viem/chains";
 
 import erc20ABI from "@/erc20ABI.json";
-import { toast } from 'sonner';
-import { parseUnits } from 'viem';
+import { toast } from "sonner";
+import { parseUnits } from "viem";
 import { useEffect } from "react";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: App,
-})
+});
 
 // Circuit configuration
 const CIRCUIT_CONFIG = {
-	register: {
-		wasm: "/RegistrationCircuit.wasm",
-		zkey: "/RegistrationCircuit.groth16.zkey",
-	},
-	mint: {
-		wasm: "/MintCircuit.wasm",
-		zkey: "/MintCircuit.groth16.zkey",
-	},
-	transfer: {
-		wasm: "/TransferCircuit.wasm",
-		zkey: "/TransferCircuit.groth16.zkey",
-	},
-	withdraw: {
-		wasm: "/WithdrawCircuit.wasm",
-		zkey: "/WithdrawCircuit.groth16.zkey",
-	},
+  register: {
+    wasm: "/RegistrationCircuit.wasm",
+    zkey: "/RegistrationCircuit.groth16.zkey",
+  },
+  mint: {
+    wasm: "/MintCircuit.wasm",
+    zkey: "/MintCircuit.groth16.zkey",
+  },
+  transfer: {
+    wasm: "/TransferCircuit.wasm",
+    zkey: "/TransferCircuit.groth16.zkey",
+  },
+  withdraw: {
+    wasm: "/WithdrawCircuit.wasm",
+    zkey: "/WithdrawCircuit.groth16.zkey",
+  },
   burn: {
     wasm: "/burn.wasm",
-		zkey: "/burn.zkey",
-  }
+    zkey: "/burn.zkey",
+  },
 } as const;
 
 function App() {
-  const testTokenContractAddress = "0xce8466F83c778445429C0C71F7C91E726F943dcB"
-  const {isConnected, address} = useAccount();
+  const testTokenContractAddress = "0xce8466F83c778445429C0C71F7C91E726F943dcB";
+  const { isConnected, address } = useAccount();
   const publicClient = usePublicClient({ chainId: avalancheFuji.id });
-  const {data: walletClient} = useWalletClient();
-  const {
-    useEncryptedBalance, 
-    isInitialized,
-    isRegistered,
-    register
-  } = useEERC(
-    publicClient as CompatiblePublicClient,
-    walletClient as CompatibleWalletClient,
+  const { data: walletClient } = useWalletClient();
+  const { useEncryptedBalance, isInitialized, isRegistered, register } =
+    useEERC(
+      publicClient as CompatiblePublicClient,
+      walletClient as CompatibleWalletClient,
+      testTokenContractAddress,
+      CIRCUIT_CONFIG,
+    );
+  const { deposit, refetchBalance } = useEncryptedBalance(
     testTokenContractAddress,
-    CIRCUIT_CONFIG
   );
-  const {
-    deposit,
-    refetchBalance
-  } = useEncryptedBalance(testTokenContractAddress);
 
   const { data: erc20Decimals } = useReadContract({
     abi: erc20ABI,
@@ -82,17 +78,16 @@ function App() {
     address: testTokenContractAddress,
   }) as { data: number };
 
-  
   const handlePrivateDeposit = async (amount: string) => {
     if (!isRegistered) {
       toast.warning("Registering you");
-      const {key, transactionHash} = await register();
+      const { key, transactionHash } = await register();
       console.log(key);
       console.log(transactionHash);
-      toast.success("Registering done")
+      toast.success("Registering done");
     }
     if (!isConnected) {
-      toast.error("Connect wallet to deposit tokens")
+      toast.error("Connect wallet to deposit tokens");
     }
 
     try {
@@ -125,13 +120,11 @@ function App() {
       </header>
       <p>Transfer eERC20 to Anthony's account</p>
 
-      <Button onClick={async () => await handlePrivateDeposit('1')}>
+      <Button onClick={async () => await handlePrivateDeposit("1")}>
         Deposit tokens
       </Button>
 
-      <Button className='ml-10'>
-        Transfer funds
-      </Button>
+      <Button className="ml-10">Transfer funds</Button>
     </main>
-  )
+  );
 }
