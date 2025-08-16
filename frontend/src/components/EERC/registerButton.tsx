@@ -3,10 +3,14 @@
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import registerABI from "@/registrarABI.json";
-import { useReadContract, useAccount, useSignMessage } from "wagmi";
+import { formatPrivKeyForBabyJub } from "maci-crypto";
+import { groth16, type CircuitSignals } from "snarkjs"
+import { User } from "@/eerc/user";
+import { FallbackProvider, JsonRpcProvider } from "ethers"
+import {  useConnectorClient, type Config, type Transport } from "wagmi";
+import { useReadContract, useAccount, useSignMessage, useWriteContract } from "wagmi";
 import web3 from "web3";
 import {Base8, mulPointEscalar, subOrder} from "@zk-kit/baby-jubjub";
-import {PrivateKey} from "babyjubjub";
 
 function bytesToBigInt(byteArray: Uint8Array) {
     const hexString = Array.from(byteArray, function(byte) {
@@ -41,7 +45,7 @@ export function i0(signature: string): bigint {
 
 
 export default function RegisterButton() {
-    const {address, isConnected} = useAccount();
+    const {address, isConnected, chainId} = useAccount();
     const {signMessageAsync} = useSignMessage();
     const registrarAddress = "0xcF1651fbD98491AE2f972b144D2DC41BC4c8F027"; 
     const {data: isRegistered, isLoading: registerLoading, isError: registerError, error: dataError} = useReadContract({
@@ -50,6 +54,8 @@ export default function RegisterButton() {
         functionName: "isUserRegistered",
         args: [address]
     });
+    const { writeContractAsync } = useWriteContract();
+    const { data: client } = useConnectorClient<Config>({ chainId });
 
     async function handleRegister() {
         try {
@@ -76,18 +82,80 @@ export default function RegisterButton() {
             // TODO: Generate a public and private key form signatures
             const signedMessage = await signMessageAsync({message: "I want to register with eERC"});
             const privateKey = i0(signedMessage);
-
-            const publicKey = mulPointEscalar(Base8, privateKey).map((x) => BigInt(x));
+            const formatPrivateKey = formatPrivKeyForBabyJub(privateKey);
+            const publicKey = mulPointEscalar(Base8, formatPrivateKey).map((x) => BigInt(x));
             console.log("Public key X:", publicKey[0].toString());
             console.log("Public key Y:", publicKey[1].toString());
 
-            // TODO: Generate registration hash using poseidon
-            
+            toast.info("Getting account details");
+            if (!client) {
+                toast.error("Could not get client");
+                return;
+            }
+            const { account, chain, transport } = client
+            toast.info("Getting user");
+            const network = {
+                chainId: chain.id,
+                name: chain.name,
+                ensAddress: chain.contracts?.ensRegistry?.address,
+            }
+
+            let provider;
+            if (transport.type === 'fallback') {
+                provider = new FallbackProvider((transport.transports as ReturnType<Transport>[]).map(
+                    ({ value }) => new JsonRpcProvider(value?.url, network),
+                ),)
+            }
+
+            provider = new JsonRpcProvider(transport.url, network);
+            const signer = await provider.getSigner(account.address);
+            const user = new User(signer);
+            const registrationHash = user.genRegistrationHash(BigInt(chainId!));
+            const input: CircuitSignals = {
+                SenderPrivateKey: user.formattedPrivateKey,
+                SenderPublicKey: user.publicKey,
+                SenderAddress: BigInt(user.signer.address),
+                ChainID: chainId!,
+                RegistrationHash: registrationHash,
+            }
             // TODO: Generate proof using snark
-            //
-            // TODO: Format proof for sending to contract
-            //
+            const { proof, publicSignals } = await groth16.fullProve(
+                input,
+                "/RegistrationCircuit.wasm",
+                "/RegistrationCircuit.groth16.zkey");
+
+                console.log(publicSignals);
+                console.log(proof);
+                // TODO: Format proof for sending to contract
+                toast.info("Calling the contract");
+            let a = proof.pi_a.slice(0, 2);
+            let proofa = a.map((i) => BigInt(i));
+
+            let c = proof.pi_c.slice(0, 2);
+            let proofc = c.map((i) => BigInt(i));
+
+            let b = proof.pi_b.slice(0, 2);
+            let shortB = b.map((i) => i.slice(0, 2));
+            let proofb = shortB.map((i) => i.map((j) => BigInt(j)));
             // TODO: Call register function
+            const transactionHash = await writeContractAsync({
+                abi: registerABI,
+                address: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+                functionName: 'register',
+                args: [
+                    {
+                        proofPoints: {
+                            a: proofa,
+                            b: proofb,
+                            c: proofc
+                        },
+                        publicSignals: publicSignals,
+                    }
+                ]
+
+            }
+                                                            )
+            console.log("transaction hash=>", transactionHash)
             toast.success("Registered user succesfully");
         } catch(err) {
             toast.error("Error registering user");
