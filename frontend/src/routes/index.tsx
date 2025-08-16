@@ -10,10 +10,8 @@ import {
 } from "@avalabs/eerc-sdk";
 import {
   useAccount,
-  useDisconnect,
   usePublicClient,
   useReadContract,
-  useWaitForTransactionReceipt,
   useWalletClient,
 } from "wagmi";
 
@@ -23,7 +21,7 @@ import { avalancheFuji } from 'viem/chains';
 import erc20ABI from "@/erc20ABI.json";
 import { toast } from 'sonner';
 import { parseUnits } from 'viem';
-import { useEffect } from "react";
+import RegisterButton from "@/components/EERC/registerButton";
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -125,13 +123,18 @@ function App() {
       </header>
       <p>Transfer eERC20 to Anthony's account</p>
 
-      <Button onClick={async () => await handlePrivateDeposit('1')}>
-        Deposit tokens
-      </Button>
+      <div className="flex flex-row gap-2">
+        <RegisterButton />
 
-      <Button className='ml-10'>
-        Transfer funds
-      </Button>
+        <Button onClick={async () => await handlePrivateDeposit('1')}>
+          Deposit tokens
+        </Button>
+
+        <Button className='ml-10'>
+          Transfer funds
+        </Button>
+      </div>
+
     </main>
   )
 }
