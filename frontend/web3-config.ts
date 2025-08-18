@@ -6,6 +6,7 @@ import {
 import { WagmiProvider } from 'wagmi';
 import {
   avalancheFuji,
+  hardhat,
 } from 'wagmi/chains';
 import {
   QueryClientProvider,
@@ -16,7 +17,8 @@ import {
 const config = getDefaultConfig({
   appName: 'Kage',
   projectId: 'YOUR_PROJECT_ID',
-  chains: [avalancheFuji],
+  // chains: [avalancheFuji],
+  chains: [hardhat]
 });
 
 export default config;
