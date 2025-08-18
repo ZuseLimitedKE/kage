@@ -6,7 +6,7 @@ import registerABI from "@/registrarABI.json";
 import { formatPrivKeyForBabyJub } from "maci-crypto";
 import { groth16, type CircuitSignals } from "snarkjs"
 import { User } from "@/eerc/user";
-import { FallbackProvider, JsonRpcProvider } from "ethers"
+import { BrowserProvider, FallbackProvider, JsonRpcProvider } from "ethers"
 import {  useConnectorClient, type Config, type Transport } from "wagmi";
 import { useReadContract, useAccount, useSignMessage, useWriteContract } from "wagmi";
 import web3 from "web3";
@@ -74,7 +74,7 @@ export default function RegisterButton() {
                 return;
             }
 
-            console.log(isRegistered);
+            console.log("Is Registered", isRegistered);
             if (isRegistered) {
                 toast.success("You are already registered");
                 return;
@@ -84,8 +84,7 @@ export default function RegisterButton() {
             const privateKey = i0(signedMessage);
             const formatPrivateKey = formatPrivKeyForBabyJub(privateKey);
             const publicKey = mulPointEscalar(Base8, formatPrivateKey).map((x) => BigInt(x));
-            console.log("Public key X:", publicKey[0].toString());
-            console.log("Public key Y:", publicKey[1].toString());
+            console.log("Public key", publicKey);
 
             toast.info("Getting account details");
             if (!client) {
@@ -99,18 +98,26 @@ export default function RegisterButton() {
                 name: chain.name,
                 ensAddress: chain.contracts?.ensRegistry?.address,
             }
+            console.log("Network", network);
 
             let provider;
             if (transport.type === 'fallback') {
+                console.log("Fallback");
                 provider = new FallbackProvider((transport.transports as ReturnType<Transport>[]).map(
                     ({ value }) => new JsonRpcProvider(value?.url, network),
                 ),)
             }
 
-            provider = new JsonRpcProvider(transport.url, network);
+            provider = new BrowserProvider(transport, network);
+            // provider = new JsonRpcProvider("https://avalanche-fuji-c-chain-rpc.publicnode.com", network);
+            console.log("Provider", provider);
             const signer = await provider.getSigner(account.address);
+            console.log("Signer", signer);
             const user = new User(signer);
+            console.log("User", user);
             const registrationHash = user.genRegistrationHash(BigInt(chainId!));
+            console.log("Registration hash", registrationHash);
+
             const input: CircuitSignals = {
                 SenderPrivateKey: user.formattedPrivateKey,
                 SenderPublicKey: user.publicKey,
@@ -124,10 +131,13 @@ export default function RegisterButton() {
                 "/RegistrationCircuit.wasm",
                 "/RegistrationCircuit.groth16.zkey");
 
-                console.log(publicSignals);
-                console.log(proof);
-                // TODO: Format proof for sending to contract
-                toast.info("Calling the contract");
+            console.log(`\n Public Signals \n`);
+            console.log(publicSignals);
+            console.log(`\n Proof \n`);
+            console.log(proof);
+            // TODO: Format proof for sending to contract
+            
+            toast.info("Calling the contract");
             let a = proof.pi_a.slice(0, 2);
             let proofa = a.map((i) => BigInt(i));
 
@@ -140,7 +150,7 @@ export default function RegisterButton() {
             // TODO: Call register function
             const transactionHash = await writeContractAsync({
                 abi: registerABI,
-                address: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+                address: registrarAddress,
                 functionName: 'register',
                 args: [
                     {
