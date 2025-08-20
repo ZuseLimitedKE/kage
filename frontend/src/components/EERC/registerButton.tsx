@@ -19,7 +19,7 @@ import { Base8, mulPointEscalar, subOrder } from "@zk-kit/baby-jubjub";
 import { poseidon3 } from "poseidon-lite";
 import { prove } from "@zk-kit/groth16";
 function bytesToBigInt(byteArray: Uint8Array) {
-  const hexString = Array.from(byteArray, function(byte) {
+  const hexString = Array.from(byteArray, function (byte) {
     return ("0" + (byte & 0xff).toString(16)).slice(-2);
   }).join("");
   return BigInt("0x" + hexString);
@@ -177,30 +177,54 @@ export default function RegisterButton() {
         RegistrationHash: registrationHash,
       };
 
-      console.log("Circuit Inputs", input);
+      const response = await fetch("http://localhost:3500/api/v1/proofs", {
+        method: "POST",
+        headers: {
+          'Content-Type': "application/json"
+        },
+        body: JSON.stringify({
+          SenderPrivateKey: formattedPrivateKey.toString(),
+          SenderPublicKey: [publicKey[0].toString(), publicKey[1].toString()],
+          SenderAddress: address,
+          ChainID: chainId!,
+          RegistrationHash: registrationHash.toString(),
+        })
+      });
 
-      // TODO: Generate proof using snark
-      const proof = await prove(
-        input,
-        "/RegistrationCircuit.wasm",
-        "/RegistrationCircuit.groth16.zkey",
-      );
-      // const { proof, publicSignals } = await groth16.fullProve(
+      const resBody = await response.json();
+      if (!response.ok) {
+        toast.error("Could not generate proof");
+        console.log("Error generating proof", resBody);
+      }
+
+      console.log("Generated proof");
+      console.log(resBody);
+      const calldata = getCallData(resBody.proof, resBody.publicSignals);
+
+      // console.log("Circuit Inputs", input);
+
+      // // TODO: Generate proof using snark
+      // const proof = await prove(
       //   input,
       //   "/RegistrationCircuit.wasm",
       //   "/RegistrationCircuit.groth16.zkey",
       // );
+      // // const { proof, publicSignals } = await groth16.fullProve(
+      // //   input,
+      // //   "/RegistrationCircuit.wasm",
+      // //   "/RegistrationCircuit.groth16.zkey",
+      // // );
 
-      console.log(`\n Public Signals \n`);
-      console.log(proof.publicSignals);
-      console.log(`\n Proof \n`);
-      console.log(proof);
-      // TODO: Format proof for sending to contract
+      // console.log(`\n Public Signals \n`);
+      // console.log(proof.publicSignals);
+      // console.log(`\n Proof \n`);
+      // console.log(proof);
+      // // TODO: Format proof for sending to contract
 
-      toast.info("Calling the contract");
-      const calldata = getCallData(proof.proof, proof.publicSignals);
-      console.log("Calldata");
-      console.log(calldata);
+      // toast.info("Calling the contract");
+      // const calldata = getCallData(proof.proof, proof.publicSignals);
+      // console.log("Calldata");
+      // console.log(calldata);
       // TODO: Call register function
       const transactionHash = await writeContractAsync({
         abi: registerABI,
